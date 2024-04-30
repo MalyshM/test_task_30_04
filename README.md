@@ -1,10 +1,10 @@
 внимательно с вложенностью папок
 1. git clone https://github.com/MalyshM/test_task_30_04.git
 
-2. догрузим build и node modules\n
+2. догрузим build и node modules\
   cd frontend\
   npm install\
-  npm run build\
+  npm run build
 
 3. docker compose up --build -d
 
