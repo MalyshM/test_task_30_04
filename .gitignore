@@ -1,0 +1,9 @@
+*.env
+/venv
+/.idea
+/pgdata
+*.csv
+/__pycache__
+/filebeat
+/docker_volumes
+/fastapi-logs
