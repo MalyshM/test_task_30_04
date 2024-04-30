@@ -1,7 +1,12 @@
 внимательно с вложенностью папок
-git clone https://github.com/MalyshM/test_task_30_04.git
+1. git clone https://github.com/MalyshM/test_task_30_04.git
 
-docker compose up --build -d
+2. догрузим build и node modules
+  cd frontend
+  npm install
+  npm run build
+
+3. docker compose up --build -d
 
 http://localhost:8082/api/docs
 
