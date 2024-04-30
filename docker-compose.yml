@@ -1,0 +1,68 @@
+version: '3'
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: mydatabase
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+    ports:
+      - '127.0.0.1:5432:5432'
+
+  backend:
+    build:
+      context: backend
+      dockerfile: ./backend.Dockerfile
+    container_name: backend
+    ports:
+      - "127.0.0.1:8090:8090"
+#    command: bash -c "cd /backend; python start_db.py; python /backend/scripts/ETL.py; uvicorn main:app --host 0.0.0.0 --port 8090;"
+    command: bash -c "cd /backend; uvicorn main:app --host 0.0.0.0 --port 8090 --reload;"
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/backend
+    environment:
+      - PYTHONPATH=/backend
+    depends_on:
+      - db
+
+  tests:
+    build:
+      context: backend
+      dockerfile: ./backend.Dockerfile
+    container_name: tests_michael
+    command: bash -c "cd /backend; python user_tests.py; python tests/ui_tests.py"
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/backend
+    environment:
+      - PYTHONPATH=/backend
+    depends_on:
+      - db
+      - backend
+
+  frontend:
+    image: node:20.10.0
+    container_name: frontend_BLOODY_VLADI
+    ports:
+      - '127.0.0.1:3000:3000'
+    command: bash -c "cd /frontend; npm install ; npm run build ; npm run start"
+#    entrypoint: ["bash", "-c", "cd /frontend/for_vlad; npm install ; npm run build ; npm run start"]
+    volumes:
+      - ./frontend:/frontend
+
+  web:
+    container_name: "web"
+    image: nginx:alpine
+    depends_on:
+      - backend
+    ports:
+      - "8082:80"
+    volumes:
+      - ./configs/conf.d:/etc/nginx/conf.d
