@@ -1,6 +1,6 @@
 import math
 import re
-
+from datetime import datetime, timedelta
 from fastapi import APIRouter
 from starlette import status
 from geopy.geocoders import Nominatim
@@ -65,12 +65,31 @@ async def get_temperature_by_location(name_str: str = None, long: float = None, 
             location = geolocator.geocode(name_str)
             long = location.longitude
             lat = location.latitude
+        print('asd')
         if long is None or lat is None or math.isnan(long) or math.isnan(lat):
             raise HTTPException(status_code=status.HTTP_406_NOT_ACCEPTABLE,
                                 detail="Широта или долгота не указаны")
         resp = await get_request(
             f"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={round(lat, 2)}&lon={round(long, 2)}")
-        filtered_data = [item for item in resp['properties']['timeseries'] if re.search(r"12:00:00Z", item["time"])]
-        return filtered_data
+        filtered_data = [item for item in resp['properties']['timeseries'] if re.search(r"1[0-2]:00:00Z", item["time"])]
+
+        filtered_data = [{"time": re.sub('Z', '', item["time"]),
+                          "data": item["data"]["instant"]["details"]["air_temperature"]} for item in filtered_data]
+        interpolated_data = []
+
+        # Interpolate time and data
+        for entry in filtered_data:
+            current_time = datetime.fromisoformat(entry["time"])
+            previous_time = current_time - timedelta(hours=1)
+            interpolated_entry = {
+                "time": previous_time.isoformat()[:-6] + "",
+                "data": (entry["data"] + entry["data"] - interpolated_data[-1]["data"]) / 2 if interpolated_data else
+                entry["data"]
+            }
+            interpolated_data.append(interpolated_entry)
+        interpolated_data = [{"time": item["time"][8:10],
+                              "data": item["data"]}
+                             for item in interpolated_data if re.search(r"T11", item["time"])]
+        return interpolated_data
     except Exception as e:
         raise e
